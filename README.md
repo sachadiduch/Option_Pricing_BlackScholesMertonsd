@@ -71,8 +71,6 @@ The script generates a **payoff plot** for call and put options:
 - **Long Put (red):** Profit increases as stock price drops below strike.
 - **Strike Price (dashed line):** Indicates the breakeven point.
 
-![Option Payoff](option_payoff_plot.png)
-
 ## Requirements
 Ensure the following Python libraries are installed:
 - `numpy`
