@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Feb  1 18:15:12 2025
+
+@author: sacha
+"""
+import numpy as np
+import pandas as pd
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+
+def BSM_continuous_dividend():
+    S_0 = float(input("Enter the initial stock price (S_0): "))  # Initial stock price
+    K = float(input("Enter the strike price (S_K): ")) # Strike price
+    T = float(input("Enter the time to maturity (T in years): ")) # Time to maturity in years
+    rf = float(input("Enter the risk-free rate (rf, as a decimal): ")) # Risk-free interest rate
+    σ = float(input("Enter the implied volatility (σ, sigma): "))  # Implied volatility
+    q = float(input("Enter the continuous dividend yield (q, as a decimal, 0 if none): "))
+    
+        
+    # Compute d1, d2, Nd1, and Nd2
+    d1 = ((np.log(S_0/K)) + (rf - q + (σ**2)/2)*T) / (σ * np.sqrt(T))
+    d2 = d1 - σ * np.sqrt(T)
+    Nd1 = norm.cdf(d1)
+    Nd2 = norm.cdf(d2)
+    N_prime_d1 = norm.pdf(d1)
+    
+    # Compute Call and Put Prices
+    call_price = S_0 * np.exp(-q * T) * Nd1 - K * np.exp(-rf * T) * Nd2 
+    put_price = K * np.exp(-rf * T) * norm.cdf(-d2) - S_0 * np.exp(-q * T) * norm.cdf(-d1)
+    
+    # Step 5: Compute Greeks
+    delta_c = np.exp(-q * T) * Nd1
+    delta_p = np.exp(-q * T) * (Nd1 - 1)
+    gamma = (np.exp(-q * T) * N_prime_d1) / (S_0 * σ * np.sqrt(T))
+    vega = S_0 * np.exp(-q * T) * N_prime_d1 * np.sqrt(T)
+    theta_c = (-(S_0 * np.exp(-q * T) * N_prime_d1 * σ)/(2*np.sqrt(T))) - rf*K*np.exp(-rf*T)*Nd2 + q*S_0*np.exp(-q*T)*Nd1
+    theta_p = (-(S_0 * np.exp(-q * T) * N_prime_d1 * σ)/(2*np.sqrt(T))) + rf*K*np.exp(-rf*T)*norm.cdf(-d2) - q*S_0*np.exp(-q*T)*norm.cdf(-d1)
+    rho_c = K*T*np.exp(-rf*T)*Nd2
+    rho_p = -K*T*np.exp(-rf*T)*norm.cdf(-d2)
+    
+    
+    # Return the values in a dictionary
+    return {'S_0': S_0,
+            'S_K': K,
+            'T': T,
+            'rf': rf,
+            'σ': σ,
+            'd1': d1,
+            'd2': d2,
+            'Nd1' : Nd1,
+            'Nd2' : Nd2,
+            'Call Price': call_price,
+            'Put Price': put_price,
+            'Delta Call': delta_c, 
+            'Delta Put': delta_p,
+            'Gamma': gamma, 
+            'Vega': vega, 
+            'Theta Call': theta_c,
+            'Theta Put': theta_p, 
+            'Rho Call': rho_c, 
+            'Rho Put': rho_p
+        }
+
+
+def BSM_discrete_dividend(params):
+    # ------------------------------
+    # Discrete Dividend Option Pricing
+    # ------------------------------
+    
+    print("\n--- Discrete Dividend Option Pricing Parameters---")
+    # Ask for discrete dividend details
+    D = float(input("Enter the discrete dividend amount (D): "))
+    T_div = float(input("Enter the dividend payment time (T_div in years, must be less than T): "))
+
+    # Adjust the stock price by subtracting the present value of the discrete dividend.
+    S0_adj = params['S_0'] - D * np.exp(-params['rf'] * T_div)
+   
+    # Compute d1 and d2 using the adjusted stock price (assume no continuous dividend yield here)
+    d1_d = (np.log(S0_adj / params['S_K']) + (params['rf'] + 0.5 * params['σ']**2) * params['T']) / (params['σ'] * np.sqrt(params['T']))
+    d2_d = d1_d - params['σ'] * np.sqrt(params['T'])
+  
+    # Compute Call and Put Prices for discrete dividend
+    call_price_d = S0_adj * norm.cdf(d1_d) - params['S_K'] * np.exp(-params['rf'] * params['T']) * norm.cdf(d2_d)
+    put_price_d = params['S_K'] * np.exp(-params['rf'] * params['T']) * norm.cdf(-d2_d) - S0_adj * norm.cdf(-d1_d)
+    
+    # Compute Greeks for discrete dividend option pricing
+    delta_call_d = norm.cdf(d1_d)
+    delta_put_d = norm.cdf(d1_d) - 1
+    gamma_d = norm.pdf(d1_d) / (S0_adj * params['σ'] * np.sqrt(params['T']))
+    vega_d = S0_adj * norm.pdf(d1_d) * np.sqrt(params['T'])
+    theta_call_d = (-(S0_adj * norm.pdf(d1_d) * params['σ'])/(2*np.sqrt(params['T'])) - params['rf']*params['S_K']*np.exp(-params['rf']*params['T'])*norm.cdf(d2_d))
+    theta_put_d = (-(S0_adj * norm.pdf(d1_d) * params['σ'])/(2*np.sqrt(params['T'])) + params['rf']*params['S_K']*np.exp(-params['rf']*params['T'])*norm.cdf(-d2_d))
+    rho_call_d = params['S_K'] * params['T'] * np.exp(-params['rf'] * params['T']) * norm.cdf(d2_d)
+    rho_put_d = -params['S_K'] * params['T'] * np.exp(-params['rf'] * params['T']) * norm.cdf(-d2_d)
+    
+    return {'Call Price': call_price_d, 
+            'Put Price': put_price_d, 
+            'Delta Call': delta_call_d, 
+            'Delta Put': delta_put_d,
+            'Gamma': gamma_d, 
+            'Vega': vega_d, 
+            'Theta Call': theta_call_d, 
+            'Theta Put': theta_put_d,
+            'Rho Call': rho_call_d, 
+            'Rho Put': rho_put_d}
+
+
+# ------------------------------
+# Run the Continuous Dividend Option Pricing
+# ------------------------------
+params = BSM_continuous_dividend() 
+
+# ------------------------------
+# Run the Discrete Dividend Option Pricing
+# ------------------------------
+discrete_params = BSM_discrete_dividend(params)
+
+# ------------------------------
+# Format Output in a DataFrame for Comparison
+# ------------------------------
+data = {"Metric": list(params.keys())[9:],  # Extract only financial results, ignoring initial inputs
+        "Continuous Dividend": list(params.values())[9:],  # Values from continuous pricing
+        "Discrete Dividend": list(discrete_params.values())  # Values from discrete pricing
+        }
+
+df = pd.DataFrame(data)
+
+# ------------------------------
+# Display the DataFrame
+# ------------------------------
+print(df)
+
+
+# ------------------------------
+# PLOT PAYOFF
+# ------------------------------
+
+# Extract S_0 and K from the returned dictionary
+S_0 = params['S_0']
+K = params['S_K']
+
+# Dynamically adjust the price range
+S_min = min(S_0, K) * 0.5
+S_max = max(S_0, K) * 1.5
+num_points = 200
+
+# Create an array of underlying prices
+S = np.linspace(S_min, S_max, num_points)
+
+# Compute correct payoffs
+payoff_call = np.maximum(S - K, 0)  # Long Call Payoff
+payoff_put = np.maximum(K - S, 0)   # Long Put Payoff
+
+# Plot the payoffs correctly
+plt.figure(figsize=(8, 6))
+plt.plot(S, payoff_call, label='Long Call', color='blue', linewidth=2)
+plt.plot(S, payoff_put, label='Long Put', color='red', linewidth=2)
+
+# Add labels and legend
+plt.title('Option Payoffs at Expiry')
+plt.xlabel('Underlying Price (S)')
+plt.ylabel('Payoff')
+plt.grid(True)
+plt.axhline(y=0, color='black', linewidth=1)  # Horizontal axis at payoff=0
+plt.axvline(x=K, color='grey', linestyle="--", label="Strike Price")  # Mark the strike price
+plt.legend()
+plt.show()
+
