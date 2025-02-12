@@ -7,6 +7,7 @@ This Python script implements the **Black-Scholes-Merton (BSM) model** for (Euro
 - **Greeks Calculation:** Delta, Gamma, Vega, Theta, and Rho.
 - **Comparison Table:** Displays option values under continuous and discrete dividend adjustments.
 - **Option Payoff Visualization:** Plots the payoff for long call and long put options.
+- **GBM Path Simulation:** Simulates and visualizes Geometric Brownian Motion paths for asset price evolution.
 
 ## Usage
 1. Clone this repository or download `Option_Pricer_BSM.py`.
@@ -22,7 +23,7 @@ The script will prompt you to enter:
 - **S_0:** Initial stock price (e.g., `100`).
 - **K:** Strike price (e.g., `105`).
 - **T:** Time to maturity in years (e.g., `1`).
-- **rf:** Risk-free rate (as a decimal, e.g., `0.02` for 2%).
+- **rf:** Risk-free rate (as a decimal, e.g., `0.05` for 5%).
 - **σ (sigma):** Implied volatility (e.g., `0.2`).
 - **q:** Continuous dividend yield (as a decimal, `0` if none).
 - **D:** Discrete dividend amount (optional for discrete model).
@@ -33,13 +34,12 @@ The script will prompt you to enter:
 Enter the initial stock price (S_0): 100
 Enter the strike price (S_K): 105
 Enter the time to maturity (T in years): 1
-Enter the risk-free rate (rf, as a decimal): 0.02
+Enter the risk-free rate (rf, as a decimal): 0.05
 Enter the implied volatility (σ, sigma): 0.2
-Enter the continuous dividend yield (q, as a decimal, 0 if none): 0.02
+Enter the continuous dividend yield (q, as a decimal, 0 if none): 0
 
 --- Discrete Dividend Option Pricing ---
-Enter the discrete dividend amount (D): 2
-Enter the dividend payment time (T_div in years, must be less than T): 1
+Enter the discrete dividend amount (D): 0
 ```
 
 ## Output
@@ -47,34 +47,39 @@ After running the script, you will receive:
 - A **table comparing** option prices and Greeks for continuous vs. discrete dividend models.
 - **Payoff visualization** of call and put options at expiry.
 - **Adjustments for discrete dividends** in option pricing.
+- **GBM Simulated Paths** for underlying asset prices.
 
 ### Example Output:
 ```
 --- Continuous Dividend Results---
-  Metric      Call        Put
-0  Price  5.788655  10.689648
-1  Delta  0.434002  -0.546196
-2  Gamma  0.019351   0.019351
-3   Vega  0.387012   0.387012
-4  Theta -0.010286  -0.010017
-5    Rho  0.376116  -0.653093
+  Metric      Call       Put
+0  Price  8.021352  7.900442
+1  Delta  0.542228 -0.457772
+2  Gamma  0.019835  0.019835
+3   Vega  0.396705  0.396705
+4  Theta -0.017198 -0.003516
+5    Rho  0.462015 -0.536776
 
 --- Discrete Dividend Results---
-  Metric      Call        Put
-0  Price  5.797397  10.678655
-1  Delta  0.443167  -0.556833
-2  Gamma  0.020139   0.020139
-3   Vega  0.387146   0.387146
-4  Theta -0.012670  -0.007030
-5    Rho  0.376505  -0.652703
+  Metric      Call       Put
+0  Price  8.021352  7.900442
+1  Delta  0.542228 -0.457772
+2  Gamma  0.019835  0.019835
+3   Vega  0.396705  0.396705
+4  Theta -0.017198 -0.003516
+5    Rho  0.462015 -0.536776
+
+(Note: The data is the same for the Discrete Dividend Results due to the absence of a discrete dividend.)
 ```
 
 ## Visualization
-The script generates a **payoff plot** for call and put options:
-
-- **Long Call (blue):** Profit increases as stock price rises above strike.
-- **Long Put (red):** Profit increases as stock price drops below strike.
-- **Strike Price (dashed line):** Indicates the breakeven point.
+The script generates:
+- **Payoff Plot** for call and put options:
+  - **Long Call (blue):** Profit increases as stock price rises above strike.
+  - **Long Put (red):** Profit increases as stock price drops below strike.
+  - **Strike Price (dashed line):** Indicates the breakeven point.
+- **GBM Path Simulation Plot:**
+  - Simulated Geometric Brownian Motion (GBM) paths for the asset price over time.
 
 ## Requirements
 Ensure the following Python libraries are installed:
