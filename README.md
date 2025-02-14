@@ -12,7 +12,7 @@ This Python script implements the **Black-Scholes-Merton (BSM) model** for (Euro
 
 ## Usage
 1. Clone this repository or download the latest version of the script.
-2. Ensure you have Python 3.12.7 installed along with required libraries : **`numpy`, `pandas`, `scipy`, `matplotlib`**.
+2. Ensure you have Python 3.12+ installed along with required libraries : **`numpy`, `pandas`, `scipy`, `matplotlib`**.
 3. Run the script in your terminal or IDE
 4. Follow the prompts to enter option parameters.
 
@@ -67,7 +67,7 @@ After running the script, you will receive:
 4  Theta -0.017198 -0.003516
 5    Rho  0.462015 -0.536776
 ```
-Note : the outputs ar the sam for Continuous and Discrete due to an abscence of dividend.
+Note : the outputs are the same for Continuous and Discrete due to the abscence of dividend.
 
 ## Visualization
 The script generates:
@@ -76,9 +76,9 @@ The script generates:
 - **3D Greeks Surface Plots:**
 
 ## Examples
-![3D Greeks Visualization](Images/All_Greeks.png)
-![Payoffs](Images/Payoffs.png)
 ![GBM](Images/GBM_Asset_Price.png)
+![Payoffs](Images/Payoffs.png)
+![3D Greeks Visualization](Images/All_Greeks.png)
 
 ## Contributions
 Contributions are welcome! Feel free to suggest improvements.
