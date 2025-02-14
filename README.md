@@ -75,17 +75,10 @@ The script generates:
 - **GBM Path Simulation Plot:**
 - **3D Greeks Surface Plots:**
 
-## Requirements
-Ensure the following Python libraries are installed:
-- `numpy`
-- `pandas`
-- `scipy`
-- `matplotlib`
-
-Install missing libraries using:
-```bash
-pip install numpy pandas scipy matplotlib
-```
+## Examples
+![3D Greeks Visualization](Images/All_Greeks.png)
+![Payoffs](Images/Payoffs.png)
+![GBM](Images/GBM_Asset_Price.png)
 
 ## Contributions
 Contributions are welcome! Feel free to suggest improvements.
