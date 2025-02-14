@@ -1,0 +1,390 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Feb  1 18:15:12 2025
+
+@author: sacha
+"""
+import numpy as np
+import pandas as pd
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+
+def BSM_continuous_dividend():
+    
+    # Functions that aims to prevent user to enter a string instead of a number
+    def floaterrorinput(prompt):
+        while True:
+            try:
+                value = float(input(prompt).replace(",","."))
+                return value
+            except ValueError:
+                print("Please enter a number, not a text")
+    
+    S_0 = floaterrorinput("Enter the initial stock price (S_0): ")
+    K = floaterrorinput("Enter the strike price (S_K): ")
+    T = floaterrorinput("Enter the time to maturity (T in years): ")
+    rf = floaterrorinput("Enter the risk-free rate (rf, as a decimal): ")
+    σ = floaterrorinput("Enter the implied volatility (σ, sigma): ")
+    q = floaterrorinput("Enter the continuous dividend yield (q, as a decimal, 0 if none): ")
+    
+        
+    # Compute d1, d2, Nd1, and Nd2
+    d1 = ((np.log(S_0/K)) + (rf - q + (σ**2)/2)*T) / (σ * np.sqrt(T))
+    d2 = d1 - σ * np.sqrt(T)
+    Nd1 = norm.cdf(d1)
+    Nd2 = norm.cdf(d2)
+    N_prime_d1 = norm.pdf(d1)
+    
+    # Compute Call and Put Prices
+    call_price = S_0 * np.exp(-q * T) * Nd1 - K * np.exp(-rf * T) * Nd2 
+    put_price = K * np.exp(-rf * T) * norm.cdf(-d2) - S_0 * np.exp(-q * T) * norm.cdf(-d1)
+    
+    # Compute Greeks
+    delta_c = np.exp(-q * T) * Nd1
+    delta_p = np.exp(-q * T) * (Nd1 - 1)
+    gamma = (np.exp(-q * T) * N_prime_d1) / (S_0 * σ * np.sqrt(T))
+    vega = (S_0 * np.exp(-q * T) * N_prime_d1 * np.sqrt(T))/100
+    theta_c = (-((S_0 * np.exp(-q * T) * N_prime_d1 * σ)/(2*np.sqrt(T))) - rf*K*np.exp(-rf*T)*Nd2 + q*S_0*np.exp(-q*T)*Nd1)/365
+    theta_p = ((-(S_0 * np.exp(-q * T) * N_prime_d1 * σ)/(2*np.sqrt(T))) + rf*K*np.exp(-rf*T)*norm.cdf(-d2) - q*S_0*np.exp(-q*T)*norm.cdf(-d1))/365
+    rho_c = (K*T*np.exp(-rf*T)*Nd2)/100
+    rho_p = (-K*T*np.exp(-rf*T)*norm.cdf(-d2))/100
+    
+    
+    # Return the values in a dictionary
+    return {'S_0': S_0,
+            'S_K': K,
+            'T': T,
+            'rf': rf,
+            'σ': σ,
+            'q': q,
+            'd1': d1,
+            'd2': d2,
+            'Nd1' : Nd1,
+            'Nd2' : Nd2,
+            'Call Price': call_price,
+            'Put Price': put_price,
+            'Delta Call': delta_c, 
+            'Delta Put': delta_p,
+            'Gamma': gamma, 
+            'Vega': vega, 
+            'Theta Call': theta_c,
+            'Theta Put': theta_p, 
+            'Rho Call': rho_c, 
+            'Rho Put': rho_p
+        }
+
+# ------------------------------
+# Discrete Dividend Option Pricing
+# ------------------------------
+def BSM_discrete_dividend(params):
+    print("\n--- Discrete Dividend Option Pricing Parameters---")
+
+    def floaterrorinput(prompt):#same rror management function as above
+        while True:
+            try:
+                value = float(input(prompt).replace(",", "."))
+                return value
+            except ValueError:
+                print("Please enter a number, not a text")
+
+    D = floaterrorinput("Enter the discrete dividend amount (D): ")
+    if D > 0:
+        T_div = float(input("Enter the dividend payment time (T_div in years, must be less than T): ").replace(",", "."))
+        
+        # Adjust the stock price by subtracting the present value of the discrete dividend.
+        S0_adj = params['S_0'] - D * np.exp(-params['rf'] * T_div)
+    else:
+            S0_adj = params['S_0']  # No adjustment if no dividend    
+    print()
+    print()
+
+   
+    # Compute d1 and d2 using the adjusted stock price (assume no continuous dividend yield here)
+    d1_d = (np.log(S0_adj / params['S_K']) + (params['rf'] + 0.5 * params['σ']**2) * params['T']) / (params['σ'] * np.sqrt(params['T']))
+    d2_d = d1_d - params['σ'] * np.sqrt(params['T'])
+  
+    # Compute Call and Put Prices for discrete dividend
+    call_price_d = S0_adj * norm.cdf(d1_d) - params['S_K'] * np.exp(-params['rf'] * params['T']) * norm.cdf(d2_d)
+    put_price_d = params['S_K'] * np.exp(-params['rf'] * params['T']) * norm.cdf(-d2_d) - S0_adj * norm.cdf(-d1_d)
+    
+    # Compute Greeks for discrete dividend option pricing
+    delta_call_d = norm.cdf(d1_d)
+    delta_put_d = norm.cdf(d1_d) - 1
+    gamma_d = norm.pdf(d1_d) / (S0_adj * params['σ'] * np.sqrt(params['T']))
+    vega_d = (S0_adj * norm.pdf(d1_d) * np.sqrt(params['T']))/100
+    theta_call_d = ((-(S0_adj * norm.pdf(d1_d) * params['σ'])/(2*np.sqrt(params['T'])) - params['rf']*params['S_K']*np.exp(-params['rf']*params['T'])*norm.cdf(d2_d)))/365
+    theta_put_d = ((-(S0_adj * norm.pdf(d1_d) * params['σ'])/(2*np.sqrt(params['T'])) + params['rf']*params['S_K']*np.exp(-params['rf']*params['T'])*norm.cdf(-d2_d)))/365
+    rho_call_d = (params['S_K'] * params['T'] * np.exp(-params['rf'] * params['T']) * norm.cdf(d2_d))/100
+    rho_put_d = (-params['S_K'] * params['T'] * np.exp(-params['rf'] * params['T']) * norm.cdf(-d2_d))/100
+    
+    return {'Call Price': call_price_d, 
+            'Put Price': put_price_d, 
+            'Delta Call': delta_call_d, 
+            'Delta Put': delta_put_d,
+            'Gamma': gamma_d, 
+            'Vega': vega_d, 
+            'Theta Call': theta_call_d, 
+            'Theta Put': theta_put_d,
+            'Rho Call': rho_call_d, 
+            'Rho Put': rho_put_d}
+
+def plot_gbm_paths(S0, rf, q, sigma, T, steps=100, n_paths=100):
+    dt = T / steps
+    t = np.linspace(0, T, steps+1)
+    paths = np.zeros((steps+1, n_paths))
+    paths[0] = S0
+    for i in range(1, steps+1):
+        # Generate n_paths standard normal random variables
+        Z = np.random.standard_normal(n_paths)
+        # Compute the next step for all paths using the GBM formula:
+        # S_{t+dt} = S_t * exp[(rf - q - 0.5*sigma^2)*dt + sigma*sqrt(dt)*Z]
+        paths[i] = paths[i-1] * np.exp((rf - q - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * Z)
+
+    plt.figure(figsize=(14, 5))
+    for i in range(paths.shape[1]):
+        plt.plot(t, paths[:, i], color='blue', lw=0.2, alpha=0.7)
+    
+    plt.title("Simulated Asset Price Paths using GBM")
+    plt.xlabel("Time (years)")
+    plt.ylabel("Asset Price")
+    plt.grid(True)
+    plt.show()
+
+def plot_payoffs(S0, K):
+    
+    # Dynamically adjust the price range
+    S_min = min(S0, K) * 0.5
+    S_max = max(S0, K) * 1.5
+    
+    # Create an array of underlying prices
+    S = np.linspace(S_min, S_max, 200)
+    
+    # Compute  payoffs
+    payoff_call = np.maximum(S - K, 0)  # Long Call Payoff
+    payoff_put = np.maximum(K - S, 0)   # Long Put Payoff
+    
+    # Plot the payoffs 
+    plt.figure(figsize=(9, 6))
+    plt.plot(S, payoff_call, label='Long Call', color='blue', linewidth=2)
+    plt.plot(S, payoff_put, label='Long Put', color='red', linewidth=2)
+    # Add labels and legend
+    plt.title('Option Payoffs at Expiry')
+    plt.xlabel('Underlying Price (S)')
+    plt.ylabel('Payoff')
+    plt.grid(True)
+    plt.axhline(y=0, color='black', linewidth=1)
+    plt.axvline(x=K, color='grey', linestyle="--", label=f"Strike Price {K}")
+    plt.legend()
+    plt.show()
+    
+def plot_delta(params):
+    S_range = np.linspace(params['S_0'] * 0.5, params['S_0'] * 1.5, 100)  # Stock price range
+    T_range = np.linspace(0.01, params['T'], 100)  # Time to maturity range
+    S, T = np.meshgrid(S_range, T_range)
+
+    K = params['S_K']
+    rf = params['rf']
+    sigma = params['σ']
+    q = params['q']
+
+    # Black-Scholes Delta Calculation
+    d1 = (np.log(S / K) + (rf - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+    delta = np.exp(-q * T) * norm.cdf(d1)
+
+    fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
+    ax.plot_surface(S, T, delta, cmap='viridis')
+
+    ax.set_xlabel('Stock Price (S)')
+    ax.set_ylabel('Time to Maturity (T)')
+    ax.set_zlabel('Delta')
+    ax.set_title('Delta Evolution')
+
+    plt.show()    
+    
+def plot_gamma(params):
+    S_range = np.linspace(params['S_0'] * 0.5, params['S_0'] * 1.5, 100)
+    T_range = np.linspace(0.01, params['T'], 100)
+    S, T = np.meshgrid(S_range, T_range)
+
+    K = params['S_K']
+    rf = params['rf']
+    sigma = params['σ']
+    q = params['q']
+
+    d1 = (np.log(S / K) + (rf - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+    gamma = (np.exp(-q * T) * norm.pdf(d1)) / (S * sigma * np.sqrt(T))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(S, T, gamma, cmap='plasma', alpha=0.8)
+
+    ax.set_xlabel('Stock Price (S)')
+    ax.set_ylabel('Time to Maturity (T)')
+    ax.set_zlabel('Gamma')
+    ax.set_title('Gamma Evolution')
+    plt.show()
+    
+def plot_vega(params):
+    S_range = np.linspace(params['S_0'] * 0.5, params['S_0'] * 1.5, 100)
+    T_range = np.linspace(0.01, params['T'], 100)
+    S, T = np.meshgrid(S_range, T_range)
+
+    K = params['S_K']
+    rf = params['rf']
+    sigma = params['σ']
+    q = params['q']
+
+    d1 = (np.log(S / K) + (rf - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+    vega = (S * np.exp(-q * T) * norm.pdf(d1) * np.sqrt(T)) / 100
+
+    fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
+    ax.plot_surface(S, T, vega, cmap='inferno')
+
+    ax.set_xlabel('Stock Price (S)')
+    ax.set_ylabel('Time to Maturity (T)')
+    ax.set_zlabel('Vega')
+    ax.set_title('Vega Evolution')
+    plt.show()
+
+
+def plot_theta(params):
+    S_range = np.linspace(params['S_0'] * 0.5, params['S_0'] * 1.5, 100)
+    T_range = np.linspace(0.01, params['T'], 100)
+    S, T = np.meshgrid(S_range, T_range)
+
+    K = params['S_K']
+    rf = params['rf']
+    sigma = params['σ']
+    q = params['q']
+
+    d1 = (np.log(S / K) + (rf - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+    theta = ((-S * np.exp(-q * T) * norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) - rf * K * np.exp(-rf * T) * norm.cdf(d2) + q * S * np.exp(-q * T) * norm.cdf(d1)) / 365
+
+    fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
+    ax.plot_surface(S, T, theta, cmap='cividis')
+
+    ax.set_xlabel('Stock Price (S)')
+    ax.set_ylabel('Time to Maturity (T)')
+    ax.set_zlabel('Theta')
+    ax.set_title('Theta Evolution')
+    plt.show()
+
+
+def plot_rho(params):
+    S_range = np.linspace(params['S_0'] * 0.5, params['S_0'] * 1.5, 100)
+    T_range = np.linspace(0.01, params['T'], 100)
+    S, T = np.meshgrid(S_range, T_range)
+
+    K = params['S_K']
+    rf = params['rf']
+    sigma = params['σ']
+    q = params['q']
+
+    d1 = (np.log(S / K) + (rf - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+    rho = (K * T * np.exp(-rf * T) * norm.cdf(d2)) / 100
+
+    fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
+    ax.plot_surface(S, T, rho, cmap='magma')
+
+    ax.set_xlabel('Stock Price (S)')
+    ax.set_ylabel('Time to Maturity (T)')
+    ax.set_zlabel('Rho')
+    ax.set_title('Rho Evolution')
+    plt.show()
+
+def plot_all_greeks(params):
+    S_range = np.linspace(params['S_0'] * 0.5, params['S_0'] * 1.5, 100)
+    T_range = np.linspace(0.01, params['T'], 100)
+    S, T = np.meshgrid(S_range, T_range)
+
+    K = params['S_K']
+    rf = params['rf']
+    sigma = params['σ']
+    q = params['q']
+
+    d1 = (np.log(S / K) + (rf - q + 0.5 * sigma ** 2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+
+    # Calculate Greeks
+    delta = np.exp(-q * T) * norm.cdf(d1)
+    gamma = (np.exp(-q * T) * norm.pdf(d1)) / (S * sigma * np.sqrt(T))
+    vega = (S * np.exp(-q * T) * norm.pdf(d1) * np.sqrt(T)) / 100
+    theta = ((-S * np.exp(-q * T) * norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) - rf * K * np.exp(-rf * T) * norm.cdf(d2) + q * S * np.exp(-q * T) * norm.cdf(d1)) / 365
+    rho = (K * T * np.exp(-rf * T) * norm.cdf(d2)) / 100
+
+    fig = plt.figure(figsize=(18, 10))
+
+    # Subplot 1 - Delta
+    ax1 = fig.add_subplot(231, projection='3d')
+    ax1.plot_surface(S, T, delta, cmap='viridis')
+    ax1.set_title('Delta')
+
+    # Subplot 2 - Gamma
+    ax2 = fig.add_subplot(232, projection='3d')
+    ax2.plot_surface(S, T, gamma, cmap='plasma')
+    ax2.set_title('Gamma')
+
+    # Subplot 3 - Vega
+    ax3 = fig.add_subplot(233, projection='3d')
+    ax3.plot_surface(S, T, vega, cmap='inferno')
+    ax3.set_title('Vega')
+
+    # Subplot 4 - Theta
+    ax4 = fig.add_subplot(234, projection='3d')
+    ax4.plot_surface(S, T, theta, cmap='cividis')
+    ax4.set_title('Theta')
+
+    # Subplot 5 - Rho
+    ax5 = fig.add_subplot(235, projection='3d')
+    ax5.plot_surface(S, T, rho, cmap='magma')
+    ax5.set_title('Rho')
+
+    for ax in [ax1, ax2, ax3, ax4, ax5]:
+        ax.set_xlabel('Spot Price ($)')
+        ax.set_ylabel('Time to Maturity (T)')
+        ax.set_zlabel('Value')
+
+    plt.tight_layout()
+    plt.show()
+
+
+#OUTPUT_____________________________________________________
+
+# Run the Continuous Dividend Option Pricing
+params = BSM_continuous_dividend() 
+
+# Run the Discrete Dividend Option Pricing
+discrete_params = BSM_discrete_dividend(params)
+
+# Format Output in a DataFrame for Comparison
+df_continuous = pd.DataFrame({
+    "Metric": ["Price", "Delta", "Gamma", "Vega", "Theta", "Rho"],
+    "Call": [params["Call Price"], params["Delta Call"], params["Gamma"], params["Vega"], params["Theta Call"], params["Rho Call"]],
+    "Put": [params["Put Price"], params["Delta Put"], params["Gamma"], params["Vega"], params["Theta Put"], params["Rho Put"]]})
+
+df_discrete = pd.DataFrame({
+    "Metric": ["Price", "Delta", "Gamma", "Vega", "Theta", "Rho"],
+    "Call": [discrete_params["Call Price"], discrete_params["Delta Call"], discrete_params["Gamma"], discrete_params["Vega"], discrete_params["Theta Call"], discrete_params["Rho Call"]],
+    "Put": [discrete_params["Put Price"], discrete_params["Delta Put"], discrete_params["Gamma"], discrete_params["Vega"], discrete_params["Theta Put"], discrete_params["Rho Put"]]})
+
+print("\n--- Continuous Dividend Results---")
+print(df_continuous)
+print("\n--- Discrete Dividend Results---")
+print(df_discrete)
+
+# PLOT Payoffs
+plot_payoffs(params['S_0'], params['S_K'])
+
+# Plot GBM Paths (no us at the moment)
+plot_gbm_paths(params['S_0'], params['rf'], params['q'], params['σ'], params['T'], steps=10000, n_paths=100)
+
+# Plot Greeks
+plot_delta(params)
+plot_gamma(params)
+plot_vega(params)
+plot_theta(params)
+plot_rho(params)
+plot_all_greeks(params)
