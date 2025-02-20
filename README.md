@@ -86,11 +86,10 @@ The script generates:
 - **3D Greeks Surface Plots**, with a combined visualization for all Greeks.
 
 ## Examples
+![Payoffs](Images/payoffs.png)
 ![GBM](Images/MonteCarloCall.png)
 ![GBM](Images/MonteCarloPut.png)
-![Payoffs](Images/Payoffs.png)
-![3D Greeks Visualization](Images/All_Greeks.png)
-
+![3D Greeks Visualization](Images/allgreeks.png)
 
 ## Contributions
 Contributions are welcome! Feel free to suggest improvements.
